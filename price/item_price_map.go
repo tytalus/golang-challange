@@ -3,7 +3,7 @@ package price
 import "sync"
 
 type ItemPriceMap struct {
-	sync.RWMutex
+	mutex    sync.RWMutex
 	internal map[string]cachedPrice
 }
 
@@ -14,20 +14,20 @@ func NewItemPricesMap() *ItemPriceMap {
 }
 
 func (rm *ItemPriceMap) Load(key string) (value cachedPrice, ok bool) {
-	rm.RLock()
+	rm.mutex.RLock()
 	result, ok := rm.internal[key]
-	rm.RUnlock()
+	rm.mutex.RUnlock()
 	return result, ok
 }
 
 func (rm *ItemPriceMap) Delete(key string) {
-	rm.Lock()
+	rm.mutex.Lock()
 	delete(rm.internal, key)
-	rm.Unlock()
+	rm.mutex.Unlock()
 }
 
 func (rm *ItemPriceMap) Store(key string, value cachedPrice) {
-	rm.Lock()
+	rm.mutex.Lock()
 	rm.internal[key] = value
-	rm.Unlock()
+	rm.mutex.Unlock()
 }

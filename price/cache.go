@@ -49,17 +49,37 @@ func (c *TransparentCache) GetPriceFor(itemCode string) (float64, error) {
 	return price, nil
 }
 
+type channelResult struct {
+	Price    float64
+	Position int
+}
+
 // GetPricesFor gets the prices for several items at once, some might be found in the cache, others might not
 // If any of the operations returns an error, it should return an error as well
 func (c *TransparentCache) GetPricesFor(itemCodes ...string) ([]float64, error) {
-	results := []float64{}
-	for _, itemCode := range itemCodes {
-		// TODO: parallelize this, it can be optimized to not make the calls to the external service sequentially
-		price, err := c.GetPriceFor(itemCode)
-		if err != nil {
+	results := make([]float64, len(itemCodes))
+	resultChannel := make(chan channelResult)
+	errorChannel := make(chan error)
+
+	for i, itemCode := range itemCodes {
+		go func(itemCode string, position int) {
+			price, err := c.GetPriceFor(itemCode)
+			if err != nil {
+				errorChannel <- err
+			}
+			resultChannel <- channelResult{
+				Price:    price,
+				Position: position,
+			}
+		}(itemCode, i)
+	}
+	for range itemCodes {
+		select {
+		case result := <-resultChannel:
+			results[result.Position] = result.Price
+		case err := <-errorChannel:
 			return []float64{}, err
 		}
-		results = append(results, price)
 	}
 	return results, nil
 }

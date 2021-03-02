@@ -3,6 +3,7 @@ package price
 import (
 	"fmt"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 )
@@ -15,16 +16,20 @@ type mockResult struct {
 
 type mockPriceService struct {
 	numCalls    int
+	mutex       sync.Mutex
 	mockResults map[string]mockResult // what price and err to return for a particular itemCode
 	callDelay   time.Duration         // how long to sleep on each call so that we can simulate calls to be expensive
 }
 
 func (m *mockPriceService) GetPriceFor(itemCode string) (float64, error) {
+	m.mutex.Lock()
+	m.numCalls++ // increase the number of calls
+	m.mutex.Unlock()
 
-	m.numCalls++            // increase the number of calls
 	time.Sleep(m.callDelay) // sleep to simulate expensive call
 
 	result, ok := m.mockResults[itemCode]
+
 	if !ok {
 		panic(fmt.Errorf("bug in the tests, we didn't have a mock result for [%v]", itemCode))
 	}
@@ -158,13 +163,21 @@ func TestGetPricesFor_ParallelizeCalls(t *testing.T) {
 	mockService := &mockPriceService{
 		callDelay: time.Second, // each call to external service takes one full second
 		mockResults: map[string]mockResult{
-			"p1": {price: 5, err: nil},
-			"p2": {price: 7, err: nil},
+			"p1":  {price: 5, err: nil},
+			"p2":  {price: 7, err: nil},
+			"p3":  {price: 5, err: nil},
+			"p4":  {price: 7, err: nil},
+			"p5":  {price: 5, err: nil},
+			"p6":  {price: 7, err: nil},
+			"p7":  {price: 5, err: nil},
+			"p8":  {price: 7, err: nil},
+			"p9":  {price: 5, err: nil},
+			"p10": {price: 7, err: nil},
 		},
 	}
 	cache := NewTransparentCache(mockService, time.Minute)
 	start := time.Now()
-	assertFloats(t, []float64{5, 7}, getPricesWithNoErr(t, cache, "p1", "p2"), "wrong price returned")
+	assertFloats(t, []float64{5, 7, 5, 7, 5, 7, 5, 7, 5, 7}, getPricesWithNoErr(t, cache, "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"), "wrong price returned")
 	elapsedTime := time.Since(start)
 	if elapsedTime > (1200 * time.Millisecond) {
 		t.Error("calls took too long, expected them to take a bit over one second")
