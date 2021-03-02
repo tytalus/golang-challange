@@ -197,3 +197,14 @@ func TestGetPricesFor_ReturnsErrorOnServiceError(t *testing.T) {
 		t.Errorf("expected error, got nil")
 	}
 }
+
+// Check that cache returns an error if external service returns an error
+func TestGetPricesFor_ReturnsEmptyArray(t *testing.T) {
+	mockService := &mockPriceService{
+		mockResults: map[string]mockResult{
+			"p1": {price: 0, err: fmt.Errorf("some error")},
+		},
+	}
+	cache := NewTransparentCache(mockService, time.Minute)
+	assertFloats(t, []float64{}, getPricesWithNoErr(t, cache), "wrong price returned")
+}
