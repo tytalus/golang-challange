@@ -2,7 +2,7 @@
 Will use this readme to inform of some of the decisions taken.
 
 ## The Map
-The TransparentCache uses a map in which is writes and reads since we are using many goroutines to access it we have to make it threadsafe, there were many options here
+The TransparentCache uses a map in which it writes and reads, since we are using many goroutines to access it we have to make it threadsafe, there were many options here
 
 * Using a normal Map and a read/write MUTEX
 * Use the sync.Map
@@ -14,4 +14,4 @@ Use to test and search for race conditions.
 * go test ./... -v  to test
 * go test ./... -race 
 
-I've only expanded one test with more elements to check the order o the GetPricesFor and added one to see that errors are returned for the same function since that one was missing. Examples and Benchamark tests should be added as well in the future. The benchmark test can be done by making sum (of the elapsed time) on a variable when waiting, that way the tests do not need to have the timeout and can be run faster.
+I've only expanded one test with more elements to check the order o the GetPricesFor and added one to see that errors are returned for the same function since that one was missing. Examples and Benchamark tests should be added as well in the future. The benchmark test can be done by making sum (of the elapsed time) on a variable when waiting, that way the tests do not need to have the timeout and can be run faster. Another improvement will be using     t.Helper() on the helper test functions that do the assertions so that the reported line on test fail  corresponds to the main test and not the helper functions.
