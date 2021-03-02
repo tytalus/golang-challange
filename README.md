@@ -14,4 +14,4 @@ Use to test and search for race conditions.
 * go test ./... -v  to test
 * go test ./... -race 
 
-I've only expanded one test with more elements to check the order o the GetPricesFor and added one to see that errors are returned for the same function since that one was missing. Examples and Benchamark tests should be added as well in the future.
+I've only expanded one test with more elements to check the order o the GetPricesFor and added one to see that errors are returned for the same function since that one was missing. Examples and Benchamark tests should be added as well in the future. The benchmark test can be done by making sum (of the elapsed time) on a variable when waiting, that way the tests do not need to have the timeout and can be run faster.
