@@ -22,20 +22,20 @@ type cachedPrice struct {
 type TransparentCache struct {
 	actualPriceService PriceService
 	maxAge             time.Duration
-	prices             map[string]cachedPrice
+	prices             *ItemPriceMap
 }
 
 func NewTransparentCache(actualPriceService PriceService, maxAge time.Duration) *TransparentCache {
 	return &TransparentCache{
 		actualPriceService: actualPriceService,
 		maxAge:             maxAge,
-		prices:             map[string]cachedPrice{},
+		prices:             NewItemPricesMap(),
 	}
 }
 
 // GetPriceFor gets the price for the item, either from the cache or the actual service if it was not cached or too old
 func (c *TransparentCache) GetPriceFor(itemCode string) (float64, error) {
-	priceFromCache, ok := c.prices[itemCode]
+	priceFromCache, ok := c.prices.Load(itemCode)
 	if ok {
 		if time.Since(priceFromCache.RetrievedTime) < c.maxAge {
 			return priceFromCache.Price, nil
@@ -45,7 +45,7 @@ func (c *TransparentCache) GetPriceFor(itemCode string) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("getting price from service : %v", err.Error())
 	}
-	c.prices[itemCode] = cachedPrice{Price: price, RetrievedTime: time.Now()}
+	c.prices.Store(itemCode, cachedPrice{Price: price, RetrievedTime: time.Now()})
 	return price, nil
 }
 
